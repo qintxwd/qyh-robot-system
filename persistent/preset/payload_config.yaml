@@ -1,0 +1,4 @@
+left_gripper:
+  mass: 2.0
+right_gripper:
+  mass: 2.0

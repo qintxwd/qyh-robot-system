@@ -1,0 +1,15 @@
+[submodule "qyh_jushen_backend"]
+	path = qyh_jushen_backend
+	url = git@github.com:qintxwd/qyh_jushen_backend.git
+[submodule "qyh_jushen_frontend"]
+	path = qyh_jushen_frontend
+	url = git@github.com:qintxwd/qyh_jushen_frontend.git
+[submodule "qyh_jushen_ws"]
+	path = qyh_jushen_ws
+	url = git@github.com:qintxwd/qyh_jushen_ws.git
+[submodule "qyh_standard_api"]
+	path = qyh_standard_api
+	url = git@github.com:qintxwd/qyh_standard_api.git
+[submodule "qyh_jushen_bringup_shell"]
+	path = qyh_jushen_bringup_shell
+	url = git@github.com:qintxwd/qyh_jushen_bringup_shell.git
