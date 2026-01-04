@@ -1,0 +1,1 @@
+./qyh_jushen_ws/install/bringup/share/bringup/shell/bringup.sh.x
