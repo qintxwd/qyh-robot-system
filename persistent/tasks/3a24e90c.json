@@ -17,7 +17,7 @@
         "params": {
           "speed": 50,
           "timeout": 30,
-          "height_name": "lift_bottom"
+          "height_name": "lowest"
         },
         "children": []
       },
@@ -27,7 +27,7 @@
         "params": {
           "speed": 50,
           "timeout": 30,
-          "height_name": "lift_top"
+          "height_name": "highest"
         },
         "children": []
       },
