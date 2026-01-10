@@ -13,3 +13,6 @@
 [submodule "qyh_jushen_bringup_shell"]
 	path = qyh_jushen_bringup_shell
 	url = git@github.com:qintxwd/qyh_jushen_bringup_shell.git
+[submodule "qyh_act_training"]
+	path = qyh_act_training
+	url = git@github.com:qintxwd/qyh_act_training.git
