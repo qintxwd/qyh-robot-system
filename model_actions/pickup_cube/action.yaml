@@ -1,0 +1,136 @@
+# =============================================================================
+# 模型动作配置: pickup_cube (夹取方块)
+# =============================================================================
+# 此配置文件从云端下载，定义了完整的数据采集、训练、推理参数
+# 存储位置: ~/qyh-robot-system/model_actions/pickup_cube/
+# =============================================================================
+
+metadata:
+  id: pickup_cube
+  name: 夹取方块
+  description: 使用右臂和右夹爪抓取桌面上的方块
+  version: "1.0.0"
+  author: qyh-robot-cloud
+  tags:
+    - manipulation
+    - single-arm
+    - gripper
+  created_at: "2026-01-12T00:00:00"
+  updated_at: "2026-01-12T00:00:00"
+  
+  # 动作状态：collecting（数据采集中）/ trained（已训练可执行）
+  # 注意：此字段由系统根据 model/ 目录下是否有模型文件自动判断
+  # 手动设置此字段可以覆盖自动检测（如标记模型质量不佳需要重新训练）
+  status: collecting
+  
+  # 数据统计（由系统自动更新）
+  episode_count: 0        # 已采集的轨迹数量
+  last_training: null     # 最后一次训练时间
+  model_version: null     # 当前模型版本
+
+# =============================================================================
+# 数据采集配置
+# =============================================================================
+collection:
+  # 相机配置
+  cameras:
+    - name: head_rgb
+      topic: /camera/head/color/image_raw
+      type: rgb
+      resize: [224, 224]
+      compressed: false
+    - name: head_depth
+      topic: /camera/head/depth/image_raw
+      type: depth
+      resize: [224, 224]
+      normalize: minmax
+      max_depth: 3000
+      compressed: false
+  
+  # 关节配置 - 右臂 7 自由度
+  joints:
+    topic: /right_arm/joint_states
+    names:
+      - right_joint1
+      - right_joint2
+      - right_joint3
+      - right_joint4
+      - right_joint5
+      - right_joint6
+      - right_joint7
+    include_velocity: false
+  
+  # 夹爪配置
+  grippers:
+    - topic: /right_gripper/state
+      joint_name: right_gripper_joint
+      normalize_range: [0.0, 0.08]
+  
+  # 时间同步
+  sync:
+    method: nearest
+    tolerance_ms: 50
+    target_hz: 30
+  
+  # 动作类型
+  action_type: absolute
+
+# =============================================================================
+# 训练配置
+# =============================================================================
+training:
+  batch_size: 32
+  num_epochs: 3000
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  
+  warmup_epochs: 200
+  lr_scheduler: cosine
+  
+  save_interval: 200
+  save_best: true
+  
+  early_stopping: true
+  patience: 300
+  
+  use_amp: true
+  grad_clip: 1.0
+  
+  # ACT 模型配置
+  observation_horizon: 10
+  action_horizon: 20
+  action_exec_horizon: 3
+  
+  hidden_dim: 512
+  num_heads: 8
+  num_encoder_layers: 4
+  num_decoder_layers: 4
+  
+  latent_dim: 32
+  kl_weight: 10.0
+  
+  vision_backbone: resnet18
+  vision_pretrained: true
+  freeze_vision: false
+
+# =============================================================================
+# 推理配置
+# =============================================================================
+inference:
+  control_frequency: 20.0
+  inference_frequency: 10.0
+  action_scale: 0.4
+  smoothing_alpha: 0.3
+  max_joint_velocity: 1.0
+  max_joint_delta: 0.05
+  gripper_threshold: 0.6
+
+# =============================================================================
+# 预处理配置
+# =============================================================================
+preprocess:
+  skip_static_segments: true
+  static_threshold: 0.01
+  min_segment_length: 10
+  detect_grasp_failure: true
+  gripper_close_threshold: 0.3
