@@ -35,12 +35,12 @@ collection:
   # 相机配置
   cameras:
     - name: head_rgb
-      topic: /camera/head/color/image_raw
+      topic: /head_camera/color/image_raw
       type: rgb
       resize: [224, 224]
       compressed: false
     - name: head_depth
-      topic: /camera/head/depth/image_raw
+      topic: /head_camera/depth/image_raw
       type: depth
       resize: [224, 224]
       normalize: minmax
@@ -62,7 +62,7 @@ collection:
   
   # 夹爪配置
   grippers:
-    - topic: /right_gripper/state
+    - topic: /right/gripper_state
       joint_name: right_gripper_joint
       normalize_range: [0.0, 0.08]
   
