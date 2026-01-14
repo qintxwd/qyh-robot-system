@@ -24,7 +24,7 @@ metadata:
   status: collecting
   
   # 数据统计（由系统自动更新）
-  episode_count: 0        # 已采集的轨迹数量
+  episode_count: 103        # 已采集的轨迹数量
   last_training: null     # 最后一次训练时间
   model_version: null     # 当前模型版本
 
@@ -79,9 +79,9 @@ collection:
 # 训练配置
 # =============================================================================
 training:
-  batch_size: 32
+  batch_size: 128
   num_epochs: 3000
-  learning_rate: 1.0e-4
+  learning_rate: 4.0e-4
   weight_decay: 1.0e-4
   
   warmup_epochs: 200
@@ -97,7 +97,9 @@ training:
   grad_clip: 1.0
   
   # ACT 模型配置
-  observation_horizon: 10
+  # observation_horizon: 观测历史长度。ACT 原论文使用 1（只看当前帧）
+  # 设为 10 会导致每 batch 处理 10 倍图像，训练非常慢！
+  observation_horizon: 1
   action_horizon: 20
   action_exec_horizon: 3
   

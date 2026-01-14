@@ -61,3 +61,9 @@ logs/
 .env
 .env.local
 .env.*.local
+
+# 我们需要忽略model_actions/{robot_name}/{robot_version}/{action_name}/data/bags和bags同级的episodes文件夹下的所有内容，但保留这些文件夹本身
+model_actions/*/*/*/data/bags/*
+!model_actions/*/*/*/data/bags/.gitkeep
+model_actions/*/*/*/data/episodes/*
+!model_actions/*/*/*/data/episodes/.gitkeep
