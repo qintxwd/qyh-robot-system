@@ -131,8 +131,15 @@ inference:
 # 预处理配置
 # =============================================================================
 preprocess:
-  skip_static_segments: true
-  static_threshold: 0.01
+  # 跳过静止片段（可选，用于过滤录制开头/结尾的等待期）
+  # 建议保持 false，保留所有数据（包括慢速精细操作）
+  skip_static_segments: false
+  # 静止检测阈值（rad/帧，30Hz 采样率下）
+  # 0.0001：只过滤真正静止的帧（保留 >95% 数据）
+  # 原值 0.01 太大，会过滤所有数据
+  static_threshold: 0.0001
+  # 最小有效片段长度（帧数）
   min_segment_length: 10
-  detect_grasp_failure: true
+  # 检测夹取失败（可选）
+  detect_grasp_failure: false
   gripper_close_threshold: 0.3
