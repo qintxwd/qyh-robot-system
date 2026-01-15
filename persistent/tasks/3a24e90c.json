@@ -16,8 +16,9 @@
         "type": "LiftMoveTo",
         "params": {
           "speed": 50,
-          "timeout": 30,
-          "height_name": "lowest"
+          "timeout": 40,
+          "height_name": "lowest",
+          "height": 0
         },
         "children": []
       },
@@ -26,8 +27,9 @@
         "type": "LiftMoveTo",
         "params": {
           "speed": 50,
-          "timeout": 30,
-          "height_name": "highest"
+          "timeout": 40,
+          "height_name": "highest",
+          "height": 500
         },
         "children": []
       },
@@ -42,5 +44,5 @@
     ]
   },
   "created_at": "2025-12-10T15:03:49.808724",
-  "updated_at": "2025-12-10T15:55:07.110376"
+  "updated_at": "2026-01-15T14:00:12.488624"
 }
