@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Plane Stream Checker</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .controls { margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        video { width: 100%; background: #000; border-radius: 5px; }
+        #log { margin-top: 20px; padding: 10px; background: #eee; height: 200px; overflow-y: scroll; font-family: monospace; font-size: 12px; }
+        .status { font-weight: bold; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Media Plane Stream Checker</h1>
+    
+    <div class="controls">
+        <label for="wsUrl">Signaling URL:</label>
+        <input type="text" id="wsUrl" value="ws://localhost:8888" style="width: 200px;">
+        
+        <label for="sourceSelect">Source:</label>
+        <select id="sourceSelect">
+            <option value="head_camera">Head Camera</option>
+            <option value="left_camera">Left Camera</option>
+            <option value="right_camera">Right Camera</option>
+            <option value="test_pattern">Test Pattern</option>
+        </select>
+        
+        <button id="connectBtn" onclick="startStream()">Start Stream</button>
+        <button id="stopBtn" onclick="stopStream()" disabled>Stop</button>
+        <span id="status" class="status">Disconnected</span>
+    </div>
+
+    <video id="remoteVideo" autoplay playsinline controls muted></video>
+
+    <div id="log"></div>
+</div>
+
+<script>
+    let ws = null;
+    let pc = null;
+    let currentSource = "";
+
+    const logDiv = document.getElementById("log");
+    const statusSpan = document.getElementById("status");
+    const connectBtn = document.getElementById("connectBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const wsUrlInput = document.getElementById("wsUrl");
+    const sourceSelect = document.getElementById("sourceSelect");
+
+    function log(msg) {
+        const div = document.createElement("div");
+        div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logDiv.appendChild(div);
+        logDiv.scrollTop = logDiv.scrollHeight;
+        console.log(msg);
+    }
+
+    async function startStream() {
+        const url = wsUrlInput.value;
+        const source = sourceSelect.value;
+        currentSource = source;
+
+        log(`Connecting to ${url}...`);
+        statusSpan.textContent = "Connecting...";
+        
+        connectBtn.disabled = true;
+
+        try {
+            ws = new WebSocket(url);
+            
+            ws.onopen = () => {
+                log("WebSocket connected");
+                statusSpan.textContent = "WS Connected";
+                // Wait for welcome message? Protocol says server sends welcome.
+                // But we can verify connection.
+            };
+
+            ws.onmessage = async (event) => {
+                let msg;
+                try {
+                    msg = JSON.parse(event.data);
+                } catch (e) {
+                    if (event.data instanceof Blob) {
+                        log("Received Blob message (ignored)");
+                    } else {
+                         log("Received non-JSON message: " + event.data);
+                    }
+                    return;
+                }
+                
+                log(`Rx: ${msg.type}`);
+
+                if (msg.type === "welcome") {
+                    log(`Server Welcome. Auth required: ${msg.require_auth}`);
+                    // Since auth is false in config, we proceed to request stream
+                    requestStream(source);
+                } else if (msg.type === "offer") {
+                    await handleOffer(msg.sdp);
+                } else if (msg.type === "ice_candidate") {
+                    await handleCandidate(msg);
+                } else if (msg.type === "error") {
+                    log(`ERROR: ${msg.error || msg.code} - ${msg.details || msg.message}`);
+                    closeAll();
+                } else if (msg.type === "stream_stopped") {
+                    log("Stream stopped by server");
+                    closeAll();
+                }
+            };
+
+            ws.onerror = (e) => {
+                log("WebSocket error");
+                statusSpan.textContent = "Error";
+                closeAll();
+            };
+
+            ws.onclose = () => {
+                log("WebSocket closed");
+                statusSpan.textContent = "Disconnected";
+                closeAll();
+            };
+
+        } catch (e) {
+            log("Connection failed: " + e);
+            closeAll();
+        }
+    }
+
+    function requestStream(source) {
+        log(`Requesting stream: ${source}`);
+        send({
+            type: "request_stream",
+            source: source
+        });
+        statusSpan.textContent = "Requesting Stream...";
+    }
+
+    async function handleOffer(sdp) {
+        log("Handling Offer...");
+        
+        pc = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                log("Sending ICE candidate");
+                send({
+                    type: "ice_candidate",
+                    candidate: event.candidate.candidate,
+                    sdp_mid: event.candidate.sdpMid,
+                    sdp_mline_index: event.candidate.sdpMLineIndex
+                });
+            }
+        };
+
+        pc.oniceconnectionstatechange = () => {
+            log(`ICE State: ${pc.iceConnectionState}`);
+            if (pc.iceConnectionState === 'connected') {
+                statusSpan.textContent = "Streaming";
+                stopBtn.disabled = false;
+            }
+        };
+
+        pc.ontrack = (event) => {
+            log("Track received");
+            const video = document.getElementById("remoteVideo");
+            if (video.srcObject !== event.streams[0]) {
+                video.srcObject = event.streams[0];
+                log("Video stream attached");
+            }
+        };
+
+        await pc.setRemoteDescription(new RTCSessionDescription({
+            type: "offer",
+            sdp: sdp
+        }));
+
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        log("Sending Answer");
+        send({
+            type: "answer",
+            sdp: answer.sdp
+        });
+    }
+
+    async function handleCandidate(msg) {
+        if (!pc) return;
+        try {
+            await pc.addIceCandidate(new RTCIceCandidate({
+                candidate: msg.candidate,
+                sdpMid: msg.sdp_mid !== undefined ? msg.sdp_mid : msg.id, // compatibility
+                sdpMLineIndex: msg.sdp_mline_index !== undefined ? msg.sdp_mline_index : msg.label
+            }));
+            log("Added remote ICE candidate");
+        } catch (e) {
+            log("Error adding candidate: " + e);
+        }
+    }
+
+    function stopStream() {
+        log("Stopping stream...");
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            send({ type: "stop_stream" });
+        }
+        closeAll();
+    }
+
+    function closeAll() {
+        if (pc) {
+            pc.close();
+            pc = null;
+        }
+        if (ws) {
+            ws.close();
+            ws = null;
+        }
+        document.getElementById("remoteVideo").srcObject = null;
+        connectBtn.disabled = false;
+        stopBtn.disabled = true;
+        statusSpan.textContent = "Disconnected";
+    }
+
+    function send(msg) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(msg));
+        }
+    }
+</script>
+
+</body>
+</html>
