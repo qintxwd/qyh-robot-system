@@ -69,7 +69,7 @@ collection:
   # 时间同步
   sync:
     method: nearest
-    tolerance_ms: 50
+    tolerance_ms: 30
     target_hz: 30
   
   # 动作类型
