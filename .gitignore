@@ -67,3 +67,6 @@ model_actions/*/*/*/data/bags/*
 !model_actions/*/*/*/data/bags/.gitkeep
 model_actions/*/*/*/data/episodes/*
 !model_actions/*/*/*/data/episodes/.gitkeep
+
+
+旧版前后端/
